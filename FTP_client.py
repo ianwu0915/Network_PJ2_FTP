@@ -8,6 +8,7 @@ class FtpClient:
         # Socket for control channel open to the FTP server port 21
         # for sending FTP requests and receiving FTP responses
         self.control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def connect_to_server(self, address, port):
         try:
@@ -15,7 +16,7 @@ class FtpClient:
         except socket.error as e:
             print("Can't connect to the server with error %s", e)
 
-        ## do I need to decode and encode?
+        # do I need to decode and encode?
         response = self.control_socket.recv(2048).decode("ascii")
         print(response)
 
@@ -63,6 +64,41 @@ class FtpClient:
         mkd_command = f"RMD {pathToDirectory}\r\n"
         self.send_message(mkd_command)
 
+    def list(self, pathToDirectory):
+        list_command = f"LIST {pathToDirectory}\r\n"
+        self.data_socket.sendall(list_command.encode('ascii'))
+
+        # how to continuously receive data from ftp server (ends with \r\n)
+        while True:
+            response = self.data_socket.recv(2048).decode('ascii')
+            print(response)
+            if not response.endswith('\r\n'):
+                break
+
+    # Send PASV command to the server
+    # if the server returns the right message, use the data socket to connect to the data channel
+    def pasv(self):
+        pasv_command = "PASV\r\n"
+        self.control_socket.sendall(pasv_command.encode("ascii"))
+        response = self.control_socket.recv(2048).decode('ascii')
+
+        # 227 indicate success
+        # Parse and calculate the ip address and port
+        # Connect to the data channel
+        if response.startswith("227"):
+            self.data_socket.connect(parse_pasv_response(response))
+
+
+def parse_pasv_response(response):
+    start = response.find('(')
+    end = response.find(')')
+
+    numbers = response[start + 1:end].split(',')
+    ip_address = '.'.join(numbers[:4])
+    port = (int(numbers[4]) << 8) + int(numbers[5])
+
+    return ip_address, port
+
 
 def parse_arguments():
     command_parser = argparse.ArgumentParser()
@@ -83,11 +119,19 @@ def main():
 
     address = "ftp.4700.network"
     port = 21
+
+    username, password = "", ""
+
     client = FtpClient()
     client.connect_to_server(address, port)
     client.login_to_ftp()
 
-
+    if args.operation == "mkdir":
+        client.make_directory(args.param1)
+    elif args.operation == "rmdir":
+        client.remove_directory(args.param1)
+    elif args.operatoin == "ls":
+        client.list(args.param1)
     # for upload or download data
     client.set_type()
     client.set_stru()
