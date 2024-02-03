@@ -41,7 +41,13 @@ class FtpClient:
 
         if password:
             pass_command = f"PASS {password}\r\n"
-            self.send_message(pass_command)
+            self.control_socket.sendall(pass_command.encode('ascii'))
+            response = self.control_socket.recv(4096).decode('ascii')
+            print(response)
+            if not response.startswith('230'):
+                print("Login failed. Incorrect password.")
+                sys.exit(1)
+
 
     # Your client should set the TYPE before attempting to upload or download any data.
     def set_type(self):
@@ -267,6 +273,8 @@ def main():
             client.move_server_to_local(server_path, local_path)
         else:
             client.move_local_to_server(local_path, server_path)
+    else:
+        print("Invalid operation")
     client.quit()
 
 
