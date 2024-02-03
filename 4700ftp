@@ -12,6 +12,7 @@ class FtpClient:
         # for sending FTP requests and receiving FTP responses
         self.control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.data_channel_open = False
 
     def connect_to_server(self, address, port):
         try:
@@ -93,10 +94,12 @@ class FtpClient:
 
     # set mode, stru, type and open pasv mode
     def open_data_channel(self):
-        self.set_mode()
-        self.set_stru()
-        self.set_type()
-        self.pasv()
+        if not self.data_channel_open:
+            self.set_mode()
+            self.set_stru()
+            self.set_type()
+            self.pasv()
+            self.data_channel_open = True
 
     def list(self, pathToDirectory=None):
         self.open_data_channel()
@@ -240,15 +243,6 @@ def main():
     client = FtpClient()
     client.connect_to_server(address, port)
     client.login_to_ftp(username, password)
-    # client.make_directory("test1")
-    # client.make_directory("test1/ folder1")
-    # client.remove_directory("/test")
-    # client.list("test1/ folder1")
-    # local_path = "/Users/ianwu/Desktop/NEU/CS5700_NETWORK/PJ2_FTP/temp_file/CV.pdf"
-    # client.stor(local_path, "test1/test.txt")
-    # client.move_local_to_server(local_path, "CV.pdf")
-    # client.move_server_to_local("CV.pdf", local_path)
-    # client.dele("test1")
 
     if args.operation == "mkdir":
         client.make_directory(server_path)
