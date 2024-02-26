@@ -246,9 +246,6 @@ def main():
         else:
             local_path = args.param2
 
-    # username, password = "ianwu0915", "899d51b6f01617357b012166090dd9fe0a3c9ae416020838d2d4469363449bc9"
-    # url = "ftp://ianwu0915:899d51b6f01617357b012166090dd9fe0a3c9ae416020838d2d4469363449bc9@ftp.4700.network/test"
-
     # Create a new FTP client and connect to the server
     client = FtpClient()
     client.connect_to_server(address, port)
